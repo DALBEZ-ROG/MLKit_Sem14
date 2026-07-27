@@ -54,6 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
+        android:maxLines="8"
         android:scrollbars="vertical"
         android:inputType="textMultiLine"
         android:text="Resultados:"
@@ -63,22 +64,33 @@
         android:id="@+id/btText"
         android:onClick="OCRfx"
         android:text="OCR"
-        android:layout_margin="10dp"
+        android:layout_margin="5dp"
         android:layout_width="0dp"
         android:layout_height="55dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/btFace"
+        app:layout_constraintRight_toLeftOf="@id/btPlaca"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <Button
+        android:id="@+id/btPlaca"
+        android:onClick="Placafx"
+        android:text="Placas"
+        android:layout_margin="5dp"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/btText"
+        app:layout_constraintRight_toLeftOf="@id/btFace" />
 
     <Button
         android:id="@+id/btFace"
         android:onClick="Rostrosfx"
-        android:layout_margin="10dp"
+        android:layout_margin="5dp"
         android:layout_width="0dp"
         android:layout_height="55dp"
         android:text="Rostros"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/btText" />
+        app:layout_constraintLeft_toRightOf="@id/btPlaca" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
