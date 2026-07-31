@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -27,6 +28,10 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
 import com.google.mlkit.vision.face.FaceContour;
@@ -48,6 +53,7 @@ public class MainActivity extends AppCompatActivity
 
     public static int REQUEST_CAMERA = 111;
     public static int REQUEST_GALLERY = 222;
+    public static int REQUEST_SCANNER = 333;
 
     /**
      * Placa ecuatoriana: 3 letras + 3 o 4 digitos (ABC-123 antiguas, ABC-1234 actuales).
@@ -92,10 +98,22 @@ public class MainActivity extends AppCompatActivity
         startActivityForResult(intent, REQUEST_CAMERA);
     }
 
+    /** Abre el escaneo en vivo con CameraX (ScannerActivity). */
+    public void EnVivofx(View view) {
+        startActivityForResult(new Intent(this, ScannerActivity.class), REQUEST_SCANNER);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && null != data) {
+            if (requestCode == REQUEST_SCANNER) {
+                String codigo = data.getStringExtra(ScannerActivity.EXTRA_CODIGO);
+                txtResults.setText(codigo != null ? codigo : "No se recibio ningun codigo");
+                txtResults.scrollTo(0, 0);
+                return;
+            }
+
             try {
                 if (requestCode == REQUEST_CAMERA)
                     mSelectedImage = (Bitmap) data.getExtras().get("data");
@@ -479,6 +497,102 @@ public class MainActivity extends AppCompatActivity
 
     private String formatearPlaca(String placa) {
         return placa.substring(0, 3) + "-" + placa.substring(3);
+    }
+
+    /**
+     * Decodifica los codigos de la imagen seleccionada. Un mismo escaner de ML Kit
+     * cubre codigos de barras 1D (EAN, UPC, Code 39/93/128, ITF, Codabar) y 2D
+     * (QR, Aztec, Data Matrix, PDF417), asi que se piden todos los formatos.
+     */
+    public void Codigosfx(View v) {
+        if (mSelectedImage == null) {
+            txtResults.setText("Selecciona primero una imagen");
+            return;
+        }
+
+        InputImage image = InputImage.fromBitmap(mSelectedImage, 0);
+        BarcodeScannerOptions options =
+                new BarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+                        .build();
+
+        BarcodeScanner scanner = BarcodeScanning.getClient(options);
+        scanner.process(image)
+                .addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
+                    @Override
+                    public void onSuccess(List<Barcode> codigos) {
+                        if (codigos.isEmpty()) {
+                            txtResults.setText("No se detecto ningun codigo");
+                            mImageView.setImageBitmap(mSelectedImage);
+                            return;
+                        }
+
+                        String resultados = "";
+                        for (int i = 0; i < codigos.size(); i++) {
+                            Barcode codigo = codigos.get(i);
+                            resultados = resultados
+                                    + "Codigo " + (i + 1) + " [" + Codigos.nombreFormato(codigo.getFormat()) + "]\n"
+                                    + "Tipo: " + Codigos.nombreTipo(codigo.getValueType()) + "\n"
+                                    + "Valor: " + Codigos.texto(codigo) + "\n";
+                            if (i < codigos.size() - 1) resultados = resultados + "\n";
+                        }
+                        txtResults.setText(resultados);
+                        txtResults.scrollTo(0, 0);
+
+                        dibujarCodigos(codigos);
+                    }
+                })
+                .addOnFailureListener(this);
+    }
+
+    /** Marca cada codigo: su caja en rojo y el contorno real (4 esquinas) en verde. */
+    private void dibujarCodigos(List<Barcode> codigos) {
+        Bitmap bitmap = mSelectedImage.copy(Bitmap.Config.ARGB_8888, true);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paintCaja = new Paint();
+        paintCaja.setColor(Color.RED);
+        paintCaja.setStrokeWidth(4);
+        paintCaja.setStyle(Paint.Style.STROKE);
+
+        Paint paintContorno = new Paint();
+        paintContorno.setColor(Color.GREEN);
+        paintContorno.setStrokeWidth(4);
+        paintContorno.setStyle(Paint.Style.STROKE);
+        paintContorno.setAntiAlias(true);
+
+        Paint paintEtiqueta = new Paint();
+        paintEtiqueta.setColor(Color.RED);
+        paintEtiqueta.setStyle(Paint.Style.FILL);
+        paintEtiqueta.setFakeBoldText(true);
+        paintEtiqueta.setAntiAlias(true);
+        paintEtiqueta.setTextSize(Math.max(16f, bitmap.getWidth() / 28f));
+
+        for (int i = 0; i < codigos.size(); i++) {
+            Barcode codigo = codigos.get(i);
+            Rect caja = codigo.getBoundingBox();
+            if (caja == null) continue;
+
+            canvas.drawRect(caja, paintCaja);
+
+            Point[] esquinas = codigo.getCornerPoints();
+            if (esquinas != null && esquinas.length == 4) {
+                for (int j = 0; j < 4; j++) {
+                    Point a = esquinas[j];
+                    Point b = esquinas[(j + 1) % 4];
+                    canvas.drawLine(a.x, a.y, b.x, b.y, paintContorno);
+                }
+            }
+
+            String etiqueta = (i + 1) + ". " + Codigos.nombreFormato(codigo.getFormat());
+            float y = caja.top - paintEtiqueta.getTextSize() / 4f;
+            if (y < paintEtiqueta.getTextSize()) {
+                y = caja.bottom + paintEtiqueta.getTextSize();
+            }
+            canvas.drawText(etiqueta, caja.left, y, paintEtiqueta);
+        }
+
+        mImageView.setImageBitmap(bitmap);
     }
 
     public void onFailure(@NonNull Exception e) {

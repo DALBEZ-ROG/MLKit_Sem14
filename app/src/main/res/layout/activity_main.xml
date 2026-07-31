@@ -69,7 +69,7 @@
         android:layout_height="55dp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toLeftOf="@id/btPlaca"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toTopOf="@id/btCodigo" />
 
     <Button
         android:id="@+id/btPlaca"
@@ -78,7 +78,7 @@
         android:layout_margin="5dp"
         android:layout_width="0dp"
         android:layout_height="55dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btCodigo"
         app:layout_constraintLeft_toRightOf="@id/btText"
         app:layout_constraintRight_toLeftOf="@id/btFace" />
 
@@ -89,8 +89,30 @@
         android:layout_width="0dp"
         android:layout_height="55dp"
         android:text="Rostros"
+        app:layout_constraintBottom_toTopOf="@id/btCodigo"
+        app:layout_constraintLeft_toRightOf="@id/btPlaca"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <Button
+        android:id="@+id/btCodigo"
+        android:onClick="Codigosfx"
+        android:layout_margin="5dp"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:text="Códigos"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/btPlaca" />
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/btEnVivo" />
+
+    <Button
+        android:id="@+id/btEnVivo"
+        android:onClick="EnVivofx"
+        android:layout_margin="5dp"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:text="En vivo"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/btCodigo"
+        app:layout_constraintRight_toRightOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
